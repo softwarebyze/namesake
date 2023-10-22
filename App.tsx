@@ -7,52 +7,89 @@ import {
   FormControlLabel,
   FormControlLabelText,
   InputField,
-  FormControlHelper,
-  FormControlHelperText,
-  FormControlError,
-  FormControlErrorIcon,
-  FormControlErrorText,
-  AlertCircleIcon,
   Center,
+  Button,
+  ButtonText,
+  Heading,
+  Text,
 } from "@gluestack-ui/themed";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Dispatch, SetStateAction, useLayoutEffect, useState } from "react";
 import { ScrollView } from "react-native";
 export default function App() {
+  const [name, setName] = useState("");
+  const [names, setNames] = useState<string[]>([]);
+  useLayoutEffect(() => {
+    const getInitialNames = async () => {
+      const storedNames = await AsyncStorage.getItem("names");
+      setNames(storedNames ? JSON.parse(storedNames) : []);
+    };
+    getInitialNames();
+  }, []);
+
+  const saveName = async (name: string) => {
+    if (!name) return;
+    const newNames = [...names, name];
+    setNames(newNames);
+    await AsyncStorage.setItem("names", JSON.stringify(newNames));
+    setName("");
+  };
+
   return (
-    <GluestackUIProvider config={config}>
+    <GluestackUIProvider {...{config}}>
       <Center flex={1}>
+        <Heading sx={{ mb: "$4" }}>Namesake</Heading>
         <Box>
-          <FormControl
-            size="md"
-            isDisabled={false}
-            isInvalid={false}
-            isReadOnly={false}
-            isRequired={false}
-          >
-            <FormControlLabel mb="$1">
-              <FormControlLabelText>Password</FormControlLabelText>
-            </FormControlLabel>
-            <Input>
-              <InputField
-                type="password"
-                defaultValue="12345"
-                placeholder="password"
-              />
-            </Input>
-            <FormControlHelper>
-              <FormControlHelperText>
-                Must be at least 6 characters.
-              </FormControlHelperText>
-            </FormControlHelper>
-            <FormControlError>
-              <FormControlErrorIcon as={AlertCircleIcon} />
-              <FormControlErrorText>
-                At least 6 characters are required.
-              </FormControlErrorText>
-            </FormControlError>
-          </FormControl>
+          <Form {...{name, setName, saveName}} />
+          <NamesList {...{names}} />
         </Box>
       </Center>
     </GluestackUIProvider>
+  );
+}
+
+function Form({
+  name,
+  setName,
+  saveName,
+}: {
+  name: string;
+  setName: Dispatch<SetStateAction<string>>;
+  saveName: (name: string) => void;
+}) {
+  return (
+    <Box>
+      <FormControl>
+        <FormControlLabel>
+          <FormControlLabelText>Name</FormControlLabelText>
+        </FormControlLabel>
+        <Input>
+          <InputField
+            onChangeText={setName}
+            value={name}
+            type="text"
+            placeholder="Zack Ebenfeld"
+          />
+        </Input>
+      </FormControl>
+      <FormControl sx={{ mt: "$2" }}>
+        <Button onPress={() => saveName(name)}>
+          <ButtonText>Save Name</ButtonText>
+        </Button>
+      </FormControl>
+    </Box>
+  );
+}
+
+function NamesList({ names }: { names: string[] }) {
+  return (
+    <Box sx={{ mt: "$4" }}>
+      {names.map((name, id) => (
+        <Box key={id} sx={{ mb: "$2" }}>
+          <Text>{name}</Text>
+        </Box>
+      ))}
+    </Box>
   );
 }
 
